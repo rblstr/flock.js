@@ -1,8 +1,11 @@
 var express = require("express");
 var app = express();
 
+app.set('views', './views');
+app.set('view engine', 'jade');
+
 app.get('/', function(request, response) {
-    response.send('Hello, World!')
+    response.render('index', {title: 'Hey', message: 'Hello there!'});
 });
 
 var server = app.listen(3000, function() {
