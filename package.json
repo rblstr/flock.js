@@ -1,0 +1,17 @@
+{
+  "name": "flock.js",
+  "version": "0.0.0",
+  "description": "Reddit YouTube playlister.",
+  "homepage": "http://flock.rblstr.com",
+  "bugs": "https://github.com/rblstr/flock/issues",
+  "license": "UNLICENSED",
+  "author": "Rob Lester (https://github.com/rblstr)",
+  "main": "flock.js",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:rblstr/flock.js.git"
+  },
+  "dependencies": {
+    "express": "^4.13.3"
+  }
+}
