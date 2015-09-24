@@ -3,3 +3,7 @@ html
         title!= title
     body
         h1!= message
+        ul
+            each link in links
+                a(href='http://www.reddit.com' + link.permalink)
+                    li= link.title
