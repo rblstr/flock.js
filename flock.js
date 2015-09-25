@@ -17,18 +17,18 @@ app.set('view engine', 'jade');
 // * filter() equiv
 // * Correct way to end response early
 
-var SUPPORTED_SORTS = [
-    'top',
-    'hot'
-];
+var SUPPORTED_SORTS = {
+    'top': null,
+    'hot': null
+};
 
-var SUPPORTED_TIMES = [
-    'day',
-    'week',
-    'month',
-    'year',
-    'all'
-];
+var SUPPORTED_TIMES = {
+    'day': null,
+    'week': null,
+    'month': null,
+    'year': null,
+    'all': null
+};
 
 var SUCCESS_CODES = [
     200
@@ -85,7 +85,9 @@ function parseRedditResponse(reddit_response) {
     var links = [];
     for (var i = 0, len = children.length; i < len; ++i) {
         var child = children[i];
-        links.push(child);
+        if (child.url.indexOf('youtube') != -1) {
+            links.push(child);
+        }
     };
     return links;
 }
@@ -108,29 +110,37 @@ app.get('/hello', function(request, response) {
 app.get('/', function(request, response) {
     var subreddit_list = getSubredditList();
 
-    var subreddits_str = request.query.subreddits || nil;
+    var subreddits_str = request.query.subreddits || null;
     if (!subreddits_str) {
         response.render('index', {title: 'Hey', message: 'Flock homepage'});
         return;
     }
 
     var sort = request.query.sort || 'hot';
-    if (SUPPORTED_SORTS.indexOf(sort) === -1) {
+    if (!(sort in SUPPORTED_SORTS)) {
         console.log('ERROR: No sort: %s', sort);
+        response.redirect('/');
+        return;
     }
 
     var t = request.query.t || 'week';
-    if (SUPPORTED_TIMES.indexOf(t) === -1) {
+    if (!(t in SUPPORTED_TIMES)) {
         console.log('ERROR: Unsupported t: %s', t);
+        response.redirect('/');
+        return;
     }
 
     var limit = request.query.limit || 100;
     limit = parseInt(limit);
     if (limit !== limit) { // NaN check for non-int strings
         console.log('ERROR: Limit wasn\'t a number: %s', request.query.limit);
+        response.redirect('/');
+        return;
     }
     else if (limit < 0 || limit > 100) {
         console.log('ERROR: Limit out of range (0 <= limit <= 100): %d', limit);
+        response.redirect('/');
+        return;
     }
 
     var selected_subreddits = subreddits_str.split(' ');
@@ -147,13 +157,11 @@ app.get('/', function(request, response) {
     }
 
     getLinks(selected_subreddits, sort, t, function(links) {
-        console.log('ASYNC BITCHES');
-
         if (!links) {
             console.log('ERROR: No links found');
+            response.render('index', {title: 'Hey', message: 'Flock homepage'});
+            return;
         }
-
-        // console.log("INFO: links", links);
 
         response.render('index', {
             'title': 'Hey',

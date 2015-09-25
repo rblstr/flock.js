@@ -3,7 +3,13 @@ html
         title!= title
     body
         h1!= message
-        ul
-            each link in links
-                a(href='http://www.reddit.com' + link.permalink)
-                    li= link.title
+        if links
+            ol
+                each link in links
+                    li
+                        a(href=link.url)!= link.title
+                        br
+                        span(style='color:orange')!= link.ups
+                        span!= "|"
+                        span(style='color:blue')!= link.downs
+                        a(href='http://www.reddit.com' + link.permalink)!= "permalink"
