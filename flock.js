@@ -38,7 +38,7 @@ function getSubredditList() {
     return ['metal'];
 }
 
-function getRedditResponse(subreddits, sort, t, limit, onComplete) {
+function getRedditResponse(subreddits, sort, t, limit, done) {
     var path = '/r/' + subreddits.join('+') + '/' + sort + '.json';
     console.log('INFO: path: %s', path);
 
@@ -54,6 +54,7 @@ function getRedditResponse(subreddits, sort, t, limit, onComplete) {
         }
     };
 
+    console.log("INFO: Requesting %s", path);
     http.get(options, function (response) {
         console.log('INFO: Got Response:', response.statusCode);
         var data = '';
@@ -61,19 +62,22 @@ function getRedditResponse(subreddits, sort, t, limit, onComplete) {
             data += chunk;
         });
         response.on('end', function() {
-            var reddit_response = {};
+            var reddit_response;
             try {
                 reddit_response = JSON.parse(data);
+                if (reddit_response.error) {
+                    reddit_response = null;
+                    console.log('ERROR: Error in reddit response: %s', reddit_response.error);
+                }
             } catch (e) {
+                reddit_response = null;
                 console.log('ERROR: JSON syntax error: %s', e.message);
             }
-            if (reddit_response.error) {
-                console.log('ERROR: Error in reddit response: %s', reddit_response.error);
-            }
-            onComplete(reddit_response);
+            done(reddit_response);
         });
     }).on('error', function(error) {
         console.log('ERROR: %s', error.message)
+        done(null);
     });
 }
 
@@ -92,13 +96,13 @@ function parseRedditResponse(reddit_response) {
     return links;
 }
 
-function getLinks (subreddits, sort, t, onComplete) {
+function getLinks (subreddits, sort, t, done) {
     getRedditResponse(subreddits, sort, t, 100, function(reddit_response) {
         if (!reddit_response) {
-            onComplete(null);
+            done(null);
         } else {
             var links = parseRedditResponse(reddit_response);
-            onComplete(links);
+            done(links);
         }
     });
 }
