@@ -1,9 +1,11 @@
+doctype html
 html
     head
         title!= title
     body
         h1!= message
         if links
+            iframe(id="player", class="player", type="text/html", width="640", height="360", src=youTubeUrl, frameborder="0", allowfullscreen)
             ol
                 each link in links
                     li
@@ -12,4 +14,4 @@ html
                         span(style='color:orange')!= link.ups
                         span!= "|"
                         span(style='color:blue')!= link.downs
-                        a(href='http://www.reddit.com' + link.permalink)!= "permalink"
+                        a(href=link.permalink)!= "permalink"

@@ -1,6 +1,7 @@
 var express = require('express');
 var http = require('http');
 var querystring = require('querystring');
+var url = require('url');
 
 var app = express();
 
@@ -81,6 +82,35 @@ function getRedditResponse(subreddits, sort, t, limit, done) {
     });
 }
 
+function sanitiseYouTubeUrl(youTubeUrl) {
+    var parsedUrl = url.parse(youTubeUrl, true);
+    var videoId = parsedUrl.query.v;
+    if (!videoId) {
+        return null;
+    }
+    return 'http://www.youtube.com/watch?v=' + videoId;
+}
+
+function sanitiseShortYouTubeUrl(youTubeUrl) {
+    var parsedUrl = url.parse(youTubeUrl, true);
+    var videoId = parsedUrl.pathname.substring(1);
+    if (!videoId) {
+        return null;
+    }
+    return 'http://www.youtube.com/watch?v=' + videoId;
+}
+
+function sanitiseUrl(youTubeUrl) {
+    var lowerUrl = youTubeUrl.toLowerCase();
+    if (lowerUrl.indexOf('youtube') !== -1) {
+        return sanitiseYouTubeUrl(youTubeUrl);
+    } else if (lowerUrl.indexOf('youtu.be') !== -1) {
+        return sanitiseShortYouTubeUrl(youTubeUrl);
+    } else {
+        return null;
+    }
+}
+
 function parseRedditResponse(reddit_response) {
     var children = [];
     for (var i = 0, len = reddit_response.data.children.length; i < len; ++i) {
@@ -89,9 +119,13 @@ function parseRedditResponse(reddit_response) {
     var links = [];
     for (var i = 0, len = children.length; i < len; ++i) {
         var child = children[i];
-        if (child.url.indexOf('youtube') != -1) {
-            links.push(child);
+        var sanitisedUrl = sanitiseUrl(child.url);
+        if (!sanitisedUrl) {
+            continue;
         }
+        child.url = sanitisedUrl;
+        child.permalink = 'http://www.reddit.com' + child.permalink;
+        links.push(child);
     };
     return links;
 }
@@ -105,6 +139,35 @@ function getLinks (subreddits, sort, t, done) {
             done(links);
         }
     });
+}
+
+function generateYouTubeUrl(links) {
+    var youTubeIds = [];
+    for (var i = 0, len = links.length; i < len; ++i) {
+        var link = links[i];
+        var linkUrl = link.url;
+        var vId = url.parse(linkUrl, true).query.v;
+        if (!vId) {
+            continue;
+        }
+        youTubeIds.push(vId);
+    };
+
+    var firstId = youTubeIds.shift();
+    var playlist = youTubeIds.join(',');
+
+    var query = {
+        'autohide': 0,
+        'showinfo': 1,
+        'modestbranding': 1,
+        'rel': 0,
+        'version': 3,
+        'enablejsapi': 1,
+        'playlist': playlist
+    };
+    var queryString = querystring.stringify(query);
+
+    return 'https://www.youtube.com/embed/' + firstId + '?' + queryString;
 }
 
 app.get('/hello', function(request, response) {
@@ -167,10 +230,13 @@ app.get('/', function(request, response) {
             return;
         }
 
+        var youTubeUrl = generateYouTubeUrl(links);
+
         response.render('index', {
             'title': 'Hey',
             'message': subreddits_str,
-            'links': links
+            'links': links,
+            'youTubeUrl': youTubeUrl
         });
     });
 
