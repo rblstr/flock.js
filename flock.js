@@ -31,10 +31,6 @@ var SUPPORTED_TIMES = {
     'all': null
 };
 
-var SUCCESS_CODES = [
-    200
-]
-
 function getSubredditList() {
     return ['metal'];
 }
@@ -77,7 +73,7 @@ function getRedditResponse(subreddits, sort, t, limit, done) {
             done(reddit_response);
         });
     }).on('error', function(error) {
-        console.log('ERROR: %s', error.message)
+        console.log('ERROR: %s', error.message);
         done(null);
     });
 }
@@ -113,11 +109,12 @@ function sanitiseUrl(youTubeUrl) {
 
 function parseRedditResponse(reddit_response) {
     var children = [];
-    for (var i = 0, len = reddit_response.data.children.length; i < len; ++i) {
+    var i, len;
+    for (i = 0, len = reddit_response.data.children.length; i < len; ++i) {
         children.push(reddit_response.data.children[i].data);
-    };
+    }
     var links = [];
-    for (var i = 0, len = children.length; i < len; ++i) {
+    for (i = 0, len = children.length; i < len; ++i) {
         var child = children[i];
         var sanitisedUrl = sanitiseUrl(child.url);
         if (!sanitisedUrl) {
@@ -126,7 +123,7 @@ function parseRedditResponse(reddit_response) {
         child.url = sanitisedUrl;
         child.permalink = 'http://www.reddit.com' + child.permalink;
         links.push(child);
-    };
+    }
     return links;
 }
 
@@ -151,7 +148,7 @@ function generateYouTubeUrl(links) {
             continue;
         }
         youTubeIds.push(vId);
-    };
+    }
 
     var firstId = youTubeIds.shift();
     var playlist = youTubeIds.join(',');
