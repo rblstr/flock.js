@@ -12,15 +12,38 @@ app.set('view engine', 'jade');
 // * Modularise in a JavaScripthonic fashion
 // * Check scope of all functions and variables
 // * time.sleep for rate limited requests
-// * Check for substring in string
-// * Sort with sorting function
 // * In-place string formatting
 // * filter() equiv
-// * Correct way to end response early
+
+function topScore(link) {
+    return (link.ups - link.downs);
+}
+
+function hotScore(link) {
+    var score = link.ups - link.downs;
+    var order = Math.log10(Math.max(Math.abs(score), 1));
+    var sign = 0;
+    if (score > 0) {
+        sign = 1;
+    } else if (score < 0) {
+        sign = -1;
+    }
+    var seconds = link.created_utc - 1134028003;
+    return sign * order + seconds / 45000;
+    // return Math.round(sign * order + seconds / 45000, 7);
+}
+
+function topSort(a, b) {
+    return topScore(b) - topScore(a);
+}
+
+function hotSort(a, b) {
+    return hotScore(b) - hotScore(a);
+}
 
 var SUPPORTED_SORTS = {
-    'top': null,
-    'hot': null
+    'top': topSort,
+    'hot': hotSort
 };
 
 var SUPPORTED_TIMES = {
@@ -167,10 +190,6 @@ function generateYouTubeUrl(links) {
     return 'https://www.youtube.com/embed/' + firstId + '?' + queryString;
 }
 
-app.get('/hello', function(request, response) {
-    response.render('index', {title: 'Hey', message: 'Hello there!'});
-});
-
 app.get('/', function(request, response) {
     var subreddit_list = getSubredditList();
 
@@ -220,12 +239,32 @@ app.get('/', function(request, response) {
         }
     }
 
+    console.log('INFO: subreddit_list:', subreddit_list);
+    console.log('INFO: t: %s', t);
+    console.log('INFO: subreddits', selected_subreddits);
+
     getLinks(selected_subreddits, sort, t, function(links) {
         if (!links) {
             console.log('ERROR: No links found');
             response.render('index', {title: 'Hey', message: 'Flock homepage'});
             return;
         }
+
+        console.log("INFO: sort: %s", sort);
+        var sortFunc = SUPPORTED_SORTS[sort];
+        function sortByFunc (a, b) {
+            var result = sortFunc(a, b);
+            if (result) {
+                return result;
+            }
+
+            // If tie, sort by creation time
+            return a.created_utc - b.created_utc;
+        }
+        links.sort(sortByFunc);
+
+        console.log('INFO: limit: %d', limit);
+        links = links.slice(0, limit);
 
         var youTubeUrl = generateYouTubeUrl(links);
 
@@ -236,12 +275,6 @@ app.get('/', function(request, response) {
             'youTubeUrl': youTubeUrl
         });
     });
-
-    console.log('INFO: subreddit_list:', subreddit_list);
-    console.log('INFO: sort: %s', sort);
-    console.log('INFO: t: %s', t);
-    console.log('INFO: limit: %d', limit);
-    console.log('INFO: subreddits', selected_subreddits);
 });
 
 var server = app.listen(3000, function() {
