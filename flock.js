@@ -58,6 +58,33 @@ function getSubredditList() {
     return ['metal'];
 }
 
+function makeRequest(options, done) {
+    http.get(options, function(request) {
+        done(null, request);
+    }).on('error', function(error) {
+        done(error, null);
+    });
+}
+
+var rateLimitedRequests = {}; // Should be private to this module
+
+function rateLimitedRequest(options, timeout, done) {
+    var lastRequestTime = rateLimitedRequests[options.hostname] || new Date(0);
+    var requestTime = new Date();
+    var timeoutMillis = timeout * 1000;
+    var delta = requestTime.getTime() - lastRequestTime.getTime();
+    console.log("INFO: timeoutmillis: %d delta: %d", timeoutMillis, delta);
+    var sleepTime = Math.max(timeoutMillis - delta, 0);
+    console.log("INFO: rate limiting %s for %d seconds", options.hostname, sleepTime);
+    setTimeout(function () {
+        console.log("INFO: Requesting %s", options.path);
+        var requestTime = new Date();
+        rateLimitedRequests[options.hostname] = requestTime;
+        makeRequest(options, done);
+    }, sleepTime);
+    console.log("INFO: rate limited requests", rateLimitedRequests);
+}
+
 function getRedditResponse(subreddits, sort, t, limit, done) {
     var path = '/r/' + subreddits.join('+') + '/' + sort + '.json';
     console.log('INFO: path: %s', path);
@@ -74,8 +101,13 @@ function getRedditResponse(subreddits, sort, t, limit, done) {
         }
     };
 
-    console.log("INFO: Requesting %s", path);
-    http.get(options, function (response) {
+    rateLimitedRequest(options, 2, function (error, response) {
+        if (error) {
+            console.log('ERROR: %s', error.message);
+            done(null);
+            return;
+        }
+
         console.log('INFO: Got Response:', response.statusCode);
         var data = '';
         response.on('data', function (chunk) {
@@ -95,9 +127,6 @@ function getRedditResponse(subreddits, sort, t, limit, done) {
             }
             done(reddit_response);
         });
-    }).on('error', function(error) {
-        console.log('ERROR: %s', error.message);
-        done(null);
     });
 }
 
