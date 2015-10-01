@@ -30,7 +30,6 @@ function hotScore(link) {
     }
     var seconds = link.created_utc - 1134028003;
     return sign * order + seconds / 45000;
-    // return Math.round(sign * order + seconds / 45000, 7);
 }
 
 function topSort(a, b) {
@@ -114,18 +113,18 @@ function getRedditResponse(subreddits, sort, t, limit, done) {
             data += chunk;
         });
         response.on('end', function() {
-            var reddit_response;
+            var redditResponse;
             try {
-                reddit_response = JSON.parse(data);
-                if (reddit_response.error) {
-                    reddit_response = null;
-                    console.log('ERROR: Error in reddit response: %s', reddit_response.error);
+                redditResponse = JSON.parse(data);
+                if (redditResponse.error) {
+                    console.log('ERROR: Error in reddit response: %s', redditResponse.error);
+                    redditResponse = null;
                 }
             } catch (e) {
-                reddit_response = null;
                 console.log('ERROR: JSON syntax error: %s', e.message);
+                redditResponse = null;
             }
-            done(reddit_response);
+            done(redditResponse);
         });
     });
 }
@@ -159,11 +158,11 @@ function sanitiseUrl(youTubeUrl) {
     }
 }
 
-function parseRedditResponse(reddit_response) {
+function parseRedditResponse(redditResponse) {
     var children = [];
     var i, len;
-    for (i = 0, len = reddit_response.data.children.length; i < len; ++i) {
-        children.push(reddit_response.data.children[i].data);
+    for (i = 0, len = redditResponse.data.children.length; i < len; ++i) {
+        children.push(redditResponse.data.children[i].data);
     }
     var links = [];
     for (i = 0, len = children.length; i < len; ++i) {
@@ -180,11 +179,11 @@ function parseRedditResponse(reddit_response) {
 }
 
 function getLinks (subreddits, sort, t, done) {
-    getRedditResponse(subreddits, sort, t, 100, function(reddit_response) {
-        if (!reddit_response) {
+    getRedditResponse(subreddits, sort, t, 100, function(redditResponse) {
+        if (!redditResponse) {
             done(null);
         } else {
-            var links = parseRedditResponse(reddit_response);
+            var links = parseRedditResponse(redditResponse);
             done(links);
         }
     });
@@ -220,10 +219,10 @@ function generateYouTubeUrl(links) {
 }
 
 app.get('/', function(request, response) {
-    var subreddit_list = getSubredditList();
+    var subredditList = getSubredditList();
 
-    var subreddits_str = request.query.subreddits || null;
-    if (!subreddits_str) {
+    var subredditsString = request.query.subreddits || null;
+    if (!subredditsString) {
         response.render('index', {title: 'Hey', message: 'Flock homepage'});
         return;
     }
@@ -255,24 +254,24 @@ app.get('/', function(request, response) {
         return;
     }
 
-    var selected_subreddits = subreddits_str.split(' ');
-    var lower_subreddit_list = [];
+    var selectedSubreddits = subredditsString.split(' ');
+    var lowerSubredditList = [];
     var i = 0;
-    for (i = 0, len = subreddit_list.length; i < len; ++i) {
-        lower_subreddit_list.push(subreddit_list[i].toLowerCase());
+    for (i = 0, len = subredditList.length; i < len; ++i) {
+        lowerSubredditList.push(subredditList[i].toLowerCase());
     }
-    for (i = 0, len = selected_subreddits.length; i < len; i++) {
-        var subreddit = selected_subreddits[i];
-        if (lower_subreddit_list.indexOf(subreddit.toLowerCase())=== -1) {
-            subreddit_list.push(subreddit);
+    for (i = 0, len = selectedSubreddits.length; i < len; i++) {
+        var subreddit = selectedSubreddits[i];
+        if (lowerSubredditList.indexOf(subreddit.toLowerCase())=== -1) {
+            subredditList.push(subreddit);
         }
     }
 
-    console.log('INFO: subreddit_list:', subreddit_list);
+    console.log('INFO: subreddit list:', subredditList);
     console.log('INFO: t: %s', t);
-    console.log('INFO: subreddits', selected_subreddits);
+    console.log('INFO: subreddits', selectedSubreddits);
 
-    getLinks(selected_subreddits, sort, t, function(links) {
+    getLinks(selectedSubreddits, sort, t, function(links) {
         if (!links) {
             console.log('ERROR: No links found');
             response.render('index', {title: 'Hey', message: 'Flock homepage'});
@@ -299,9 +298,9 @@ app.get('/', function(request, response) {
 
         response.render('index', {
             'title': 'Hey',
-            'message': subreddits_str,
             'links': links,
-            'youTubeUrl': youTubeUrl
+            'youTubeUrl': youTubeUrl,
+            'selectedSubreddits': selectedSubreddits.join(' ')
         });
     });
 });
