@@ -58,8 +58,8 @@ function getSubredditList() {
 }
 
 function makeRequest(options, done) {
-    http.get(options, function(request) {
-        done(null, request);
+    http.get(options, function(response) {
+        done(null, response);
     }).on('error', function(error) {
         done(error, null);
     });
@@ -85,20 +85,21 @@ function rateLimitedRequest(options, timeout, done) {
 }
 
 function getRedditResponse(subreddits, sort, t, limit, done) {
-    var path = '/r/' + subreddits.join('+') + '/' + sort + '.json';
-    console.log('INFO: path: %s', path);
+    var query = querystring.stringify({
+        't': t,
+        'limit': limit
+    });
+    var path = '/r/' + subreddits.join('+') + '/' + sort + '.json?' + query;
 
     var options = {
         'hostname': 'www.reddit.com',
         'path': path,
         'headers': {
             'User-Agent': 'flock.js/0.0.0 by /u/rblstr'
-        },
-        'qs': {
-            't': t,
-            'limit': limit
         }
     };
+
+    console.log('INFO: path: %s', path);
 
     rateLimitedRequest(options, 2, function (error, response) {
         if (error) {
@@ -164,6 +165,8 @@ function parseRedditResponse(redditResponse) {
     for (i = 0, len = redditResponse.data.children.length; i < len; ++i) {
         children.push(redditResponse.data.children[i].data);
     }
+    console.log("INFO: %d children in reddit response", children.length);
+
     var links = [];
     for (i = 0, len = children.length; i < len; ++i) {
         var child = children[i];
@@ -175,6 +178,8 @@ function parseRedditResponse(redditResponse) {
         child.permalink = 'http://www.reddit.com' + child.permalink;
         links.push(child);
     }
+
+    console.log("INFO: Parsed %d links", links.length);
     return links;
 }
 
