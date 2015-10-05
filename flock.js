@@ -132,7 +132,7 @@ function getRedditResponse(subreddits, sort, t, limit, done) {
                         'redditResponseError': {
                             'message': redditResponse.error
                         }
-                    }
+                    };
                 }
             } catch (e) {
                 console.log('ERROR: JSON syntax error: %s', e.message);
@@ -140,7 +140,7 @@ function getRedditResponse(subreddits, sort, t, limit, done) {
                     'jsonSyntaxError': {
                         'message': e.message
                     }
-                }
+                };
             }
             done(error, redditResponse);
         });
