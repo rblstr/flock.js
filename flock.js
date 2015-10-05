@@ -70,17 +70,23 @@ var rateLimitedRequests = {}; // Should be private to this module
 function rateLimitedRequest(options, timeout, done) {
     var lastRequestTime = rateLimitedRequests[options.hostname] || new Date(0);
     var requestTime = new Date();
-    var timeoutMillis = timeout * 1000;
+
     var delta = requestTime.getTime() - lastRequestTime.getTime();
+
+    var timeoutMillis = timeout * 1000;
     console.log("INFO: timeoutmillis: %d delta: %d", timeoutMillis, delta);
+
     var sleepTime = Math.max(timeoutMillis - delta, 0);
     console.log("INFO: rate limiting %s for %d seconds", options.hostname, sleepTime);
+
     setTimeout(function () {
-        console.log("INFO: Requesting %s", options.path);
         var requestTime = new Date();
         rateLimitedRequests[options.hostname] = requestTime;
+
+        console.log("INFO: Requesting %s", options.path);
         makeRequest(options, done);
     }, sleepTime);
+
     console.log("INFO: rate limited requests", rateLimitedRequests);
 }
 
@@ -104,28 +110,39 @@ function getRedditResponse(subreddits, sort, t, limit, done) {
     rateLimitedRequest(options, 2, function (error, response) {
         if (error) {
             console.log('ERROR: %s', error.message);
-            done(null);
+            done(error, null);
             return;
         }
 
         console.log('INFO: Got Response:', response.statusCode);
+
         var data = '';
         response.on('data', function (chunk) {
             data += chunk;
         });
+
         response.on('end', function() {
+            var error = null;
             var redditResponse;
             try {
                 redditResponse = JSON.parse(data);
                 if (redditResponse.error) {
                     console.log('ERROR: Error in reddit response: %s', redditResponse.error);
-                    redditResponse = null;
+                    error = {
+                        'redditResponseError': {
+                            'message': redditResponse.error
+                        }
+                    }
                 }
             } catch (e) {
                 console.log('ERROR: JSON syntax error: %s', e.message);
-                redditResponse = null;
+                error = {
+                    'jsonSyntaxError': {
+                        'message': e.message
+                    }
+                }
             }
-            done(redditResponse);
+            done(error, redditResponse);
         });
     });
 }
@@ -184,13 +201,14 @@ function parseRedditResponse(redditResponse) {
 }
 
 function getLinks (subreddits, sort, t, done) {
-    getRedditResponse(subreddits, sort, t, 100, function(redditResponse) {
-        if (!redditResponse) {
-            done(null);
-        } else {
-            var links = parseRedditResponse(redditResponse);
-            done(links);
+    getRedditResponse(subreddits, sort, t, 100, function(error, redditResponse) {
+        if (error) {
+            done(error, null);
+            return;
         }
+
+        var links = parseRedditResponse(redditResponse);
+        done(null, links);
     });
 }
 
@@ -276,8 +294,8 @@ app.get('/', function(request, response) {
     console.log('INFO: t: %s', t);
     console.log('INFO: subreddits', selectedSubreddits);
 
-    getLinks(selectedSubreddits, sort, t, function(links) {
-        if (!links) {
+    getLinks(selectedSubreddits, sort, t, function(error, links) {
+        if (error) {
             console.log('ERROR: No links found');
             response.render('index', {title: 'Hey', message: 'Flock homepage'});
             return;
