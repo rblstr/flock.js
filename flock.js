@@ -6,7 +6,7 @@ var url = require('url');
 
 var app = express();
 
-app.use(express.static('static'));
+app.use(express.static('dist'));
 
 app.engine('handlebars', handlebars({defaultLayout: 'main'}));
 app.set('view engine', 'handlebars');

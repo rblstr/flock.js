@@ -11,7 +11,7 @@ gulp.task('less', function() {
 gulp.task('lint', function() {
     return gulp.src('static/**/*.less')
         .pipe(less())
-        .pipe(gulp.dest('static/'));
+        .pipe(gulp.dest('dist/'));
 });
 
 gulp.task('default', ['less', 'lint']);
