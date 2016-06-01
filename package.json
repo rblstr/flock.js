@@ -11,6 +11,10 @@
     "type": "git",
     "url": "git@github.com:rblstr/flock.js.git"
   },
+  "scripts": {
+    "prestart": "gulp",
+    "start": "node flock.js"
+  },
   "dependencies": {
     "express": "^4.13.3",
     "express-handlebars": "^3.0.0"
