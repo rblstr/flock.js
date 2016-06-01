@@ -1,12 +1,15 @@
 var express = require('express');
+var handlebars = require('express-handlebars');
 var http = require('http');
 var querystring = require('querystring');
 var url = require('url');
 
 var app = express();
 
-app.set('views', './views');
-app.set('view engine', 'jade');
+app.use(express.static('static'));
+
+app.engine('handlebars', handlebars({defaultLayout: 'main'}));
+app.set('view engine', 'handlebars');
 
 // TODO:
 // * Modularise in a JavaScripthonic fashion
@@ -246,7 +249,7 @@ app.get('/', function(request, response) {
 
     var subredditsString = request.query.subreddits || null;
     if (!subredditsString) {
-        response.render('index', {title: 'Hey', message: 'Flock homepage'});
+        response.render('home', {title: 'Hey', message: 'Flock homepage'});
         return;
     }
 
@@ -297,7 +300,7 @@ app.get('/', function(request, response) {
     getLinks(selectedSubreddits, sort, t, function(error, links) {
         if (error) {
             console.log('ERROR: No links found');
-            response.render('index', {title: 'Hey', message: 'Flock homepage'});
+            response.render('home', {title: 'Hey', message: 'Flock homepage'});
             return;
         }
 
@@ -319,7 +322,7 @@ app.get('/', function(request, response) {
 
         var youTubeUrl = generateYouTubeUrl(links);
 
-        response.render('index', {
+        response.render('home', {
             'title': 'Hey',
             'links': links,
             'youTubeUrl': youTubeUrl,
