@@ -10,8 +10,8 @@
 
             <br>
 
+            <ol>
             {{#each links}}
-                <ol>
                     <li>
                         <a href="{{this.url}}">{{this.title}}</a>
                         <br>
@@ -20,8 +20,8 @@
                         <span style="color:blue">{{this.downs}}</span>
                         <a href="{{this.permalink}}">permalink</a>
                     </li>
-                </ol>
             {{/each}}
+            </ol>
         {{else}}
             <div class="info">
                 <h1>Music discovery, powered by Reddit</h1>
